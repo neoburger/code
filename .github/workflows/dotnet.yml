@@ -1,0 +1,47 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Build BurgerNEO
+      run: |
+        mkdir BurgerNEO
+        cd BurgerNEO
+        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new neo3-contract
+        sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../BurgerNEO.cs > BurgerNEO.cs
+        dotnet build
+        mv bin/sc/* ./
+        rm -rf bin
+        rm -rf obj
+    - name: Build BurgerAgent0
+      run: |
+        mkdir BurgerAgent0
+        cd BurgerAgent0
+        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new neo3-contract
+        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent0.cs
+        dotnet build
+        mv bin/sc/* ./
+        rm -rf bin
+        rm -rf obj
+    - name: Release
+      run: |
+        git config --global user.email "neoburger@neoburger.github.io"
+        git config --global user.name "neoburger"
+        git checkout -b release
+        git add .
+        git commit -m 'release'
+        git push -f origin release

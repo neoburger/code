@@ -37,6 +37,17 @@ jobs:
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
+    - name: Build BurgerAgent1
+      run: |
+        mkdir BurgerAgent1
+        cd BurgerAgent1
+        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new neo3-contract
+        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent1.cs
+        dotnet build
+        mv bin/sc/* ./
+        rm -rf bin
+        rm -rf obj
     - name: Release
       run: |
         git config --global user.email "neoburger@neoburger.github.io"

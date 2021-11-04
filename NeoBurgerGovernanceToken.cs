@@ -56,7 +56,8 @@ namespace NeoBurger
         public static BigInteger GetDefaultDelegateBalance() => BalanceOf(GetDefaultDelegate());
         public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD });
         public static bool IsValidDelegate(UInt160 account) => account != UInt160.Zero && (BalanceOf(account) > GetDelegateThreshold());
-        public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_VOTE).Get(from + (ByteString)proposal_index);
+        public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_index).Get(from);
+        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_id).Find();
 
 
         public static void _deploy(object data, bool update)
@@ -121,23 +122,14 @@ namespace NeoBurger
             StorageMap proposal_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)proposal_index);
             BigInteger voting_deadline = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
             if (voting_deadline == 0)
-            {
                 throw new Exception("The proposal does not exist");
-            }
             if(Runtime.Time > voting_deadline)
-            {
                 throw new Exception("Cannot vote after the deadline");
-            }
-            StorageMap vote_map = new(Storage.CurrentContext, PREFIX_VOTE);
-            ByteString key = from + (ByteString)proposal_index;
+            StorageMap vote_map = new(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_index);
             if (for_or_against)
-            {
-                vote_map.Put(key, 1);
-            }
+                vote_map.Put(from, 1);
             else
-            {
-                vote_map.Delete(key);
-            }
+                vote_map.Delete(from);
         }
 
         public static object ExecuteProposal(BigInteger proposal_id, UInt160[] voters)
@@ -149,7 +141,7 @@ namespace NeoBurger
             BigInteger voting_deadline = (BigInteger)attributes[3];
             BigInteger proposal_executed = (BigInteger)attributes[4];
             if (Runtime.Time > voting_deadline)
-                throw new Exception("Cannot execute proposal after voting deadline");
+                throw new Exception("Cannot execute proposal after the deadline");
             if (proposal_executed > 0)
                 throw new Exception("Proposal already executed");
             BigInteger sum_votes = 0;

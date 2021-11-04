@@ -1,6 +1,5 @@
 using System.Numerics;
 using Neo;
-using Neo.SmartContract;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
@@ -16,7 +15,6 @@ namespace NeoBurger
     [ContractPermission("*", "*")]
     public class NeoBurgerGovernanceToken : Nep17Token
     {
-        // DO NOT USE the prefix 0x14, because this is the key prefix for NEP-17 token account balance
         private static readonly byte PREFIX_PROPOSAL = 0x01;
         private static readonly byte PREFIX_PROPOSAL_SCRIPT_HASH = 0x02;
         private static readonly byte PREFIX_PROPOSAL_ID = 0x03;
@@ -30,9 +28,7 @@ namespace NeoBurger
 
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
-        // public static UInt160 Owner() => Runtime.ExecutingScriptHash;
         public static BigInteger MinimalTimePeriodForVoting() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_MINIMAL_TIME_PERIOD_FOR_VOTING });
-        // milliseconds; 86400000 for one day
 
         public static object[] ProposalAttributes(BigInteger id)  {StorageMap proposal_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)id);UInt160 scripthash = (UInt160)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_SCRIPT_HASH });ByteString method = proposal_map.Get(new byte[] { PREFIX_PROPOSAL_METHOD });BigInteger arg_count = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_ARG_COUNT });ByteString[] args = new ByteString[(int)arg_count];StorageMap arg_map = new StorageMap(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)id + PREFIX_PROPOSAL_ARG);for (BigInteger j = 1; j <= arg_count; j++){args[(int)j - 1] = arg_map.Get((ByteString)j);}BigInteger voting_deadline = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });return new object[] { scripthash, method, args, voting_deadline };}
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
@@ -41,7 +37,7 @@ namespace NeoBurger
 
         public static void _deploy(object data, bool update)
         {
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID }, 1);  // initial proposal ID
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID }, 1);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_MINIMAL_TIME_PERIOD_FOR_VOTING }, 86400000 * 7);
         }
 
@@ -52,8 +48,6 @@ namespace NeoBurger
         }
         public static BigInteger NewProposal(UInt160 scripthash, string method, ByteString[] args, BigInteger voting_period)
         {
-            // Anyone can launch new proposal!
-            // ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             if (voting_period < MinimalTimePeriodForVoting())
                 throw new System.Exception("Too short voting period");
             BigInteger proposal_id = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID });
@@ -111,8 +105,7 @@ namespace NeoBurger
         }
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
-            //do nothing for now
-            //throw new System.Exception("Not implemented for now");
+            return;
         }
 
         public static void Update(ByteString nefFile, string manifest)

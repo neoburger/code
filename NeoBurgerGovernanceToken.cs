@@ -70,23 +70,17 @@ namespace NeoBurger
             }
         }
 
-        public static new bool Transfer(UInt160 from, UInt160 to, BigInteger amount, object data)
+        public static void BecomeDefaultDelegate(UInt160 account)
         {
-            // If the current default delegate sends NOBUG to others, and became not the largest holder,
-            // the qualification of default holder is not automatically deprived of.
-            // The new largest holder should transfer some to herself/himself to become the default delegate
-            bool transfer_result = Nep17Token.Transfer(from, to, amount, data);
-            if (transfer_result)
-            {
-                UInt160 default_delegate = (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE });
-                BigInteger to_account_balance = BalanceOf(to);
-                if (to_account_balance > BalanceOf(default_delegate) && to_account_balance > GetDelegateThreshold())
-                    Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, to);
-                return true;
-            }
-            return false;
+            ExecutionEngine.Assert(Runtime.CheckWitness(account));
+            UInt160 default_delegate = (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE });
+            BigInteger to_account_balance = BalanceOf(account);
+            BigInteger default_delegate_balance = BalanceOf(default_delegate);
+            if (to_account_balance > default_delegate_balance && to_account_balance > GetDelegateThreshold())
+                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, account);
+            else
+                throw new Exception((ByteString)default_delegate_balance);
         }
-
 
         public static void SetMinimalTimePeriodForVoting(BigInteger minimal_time_period)
         {

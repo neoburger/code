@@ -136,6 +136,10 @@ namespace NeoBurger
             ExecutionEngine.Assert(Runtime.CheckWitness(from));
             StorageMap proposal_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)proposal_index);
             BigInteger voting_deadline = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
+            if (voting_deadline == 0)
+            {
+                throw new System.Exception("The proposal does not exist");
+            }
             if(Runtime.Time > voting_deadline)
             {
                 throw new System.Exception("Cannot vote after the deadline");

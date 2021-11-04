@@ -1,27 +1,10 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Neo;
 using Neo.SmartContract;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using Neo.SmartContract.Framework.Attributes;
-
-//vote; store a call to contract to be voted
-//delegate others to vote for me;
-//default delegate
-
-//storage:
-//proposal[i]: the contract scripthash to call
-//proposal[i]voting_period
-//proposal[i]method
-//proposal[i]argcount
-//proposal[i]arg[j]
-
-//delegate[UInt160 from] == to
-//[DEPRECATED]//delegate_count[UInt160 to] == how many people delegated their votes to `to`
-//[DEPRECATED]//delegate_to[UInt160 to][k] == UInt160 from
-//[DEPRECATED]//delegate_from_index[UInt160 to][UInt160 from] == k
-//vote[from][i] == True/False
 
 
 namespace NeoBurger

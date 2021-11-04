@@ -5,7 +5,7 @@ using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using Neo.SmartContract.Framework.Attributes;
-
+using Neo.SmartContract;
 
 namespace NeoBurger
 {
@@ -16,6 +16,8 @@ namespace NeoBurger
     [ContractPermission("*", "*")]
     public class NeoBurgerGovernanceToken : Nep17Token
     {
+        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
+        private static readonly UInt160 INITIAL_HOLDER = default;
         private static readonly byte PREFIX_PROPOSAL = 0x01;
         private static readonly byte PREFIX_PROPOSAL_SCRIPT_HASH = 0x02;
         private static readonly byte PREFIX_PROPOSAL_ID = 0x03;
@@ -62,16 +64,17 @@ namespace NeoBurger
             {
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID }, 1);
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_MINIMAL_TIME_PERIOD_FOR_VOTING }, 86400000 * 7);
-                Mint(Runtime.ExecutingScriptHash, 10_000_000_000_000_000);
-                // And it is not easy to let this contract vote for anything in the beginning
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, Runtime.ExecutingScriptHash);
+                Mint(INITIAL_HOLDER, 10_000_000_000_000_000);
+                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, INITIAL_HOLDER);
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD }, 100_000_000_000_000);
             }
         }
 
         public static new bool Transfer(UInt160 from, UInt160 to, BigInteger amount, object data)
         {
-            // If the current default holder sends NOBUG to others, the qualification of default holder is not automatically deprived of
+            // If the current default delegate sends NOBUG to others, and became not the largest holder,
+            // the qualification of default holder is not automatically deprived of.
+            // The new largest holder should transfer some to herself/himself to become the default delegate
             bool transfer_result = Nep17Token.Transfer(from, to, amount, data);
             if (transfer_result)
             {
@@ -112,13 +115,9 @@ namespace NeoBurger
             ExecutionEngine.Assert(Runtime.CheckWitness(from));
             StorageMap delegate_map = new(Storage.CurrentContext, PREFIX_DELEGATE);
             if (to == UInt160.Zero || to == from)
-            {
                 delegate_map.Delete(from);
-            }
             else
-            {
                 delegate_map.Put(from, to);
-            }
         }
 
         public static void Vote(UInt160 from, BigInteger proposal_index, bool for_or_against)

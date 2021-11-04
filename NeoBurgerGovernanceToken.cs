@@ -53,6 +53,7 @@ namespace NeoBurger
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
         public static UInt160 GetDefaultDelegate() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE });
+        public static BigInteger GetDefaultDelegateBalance() => BalanceOf(GetDefaultDelegate());
         public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD });
         public static bool IsValidDelegate(UInt160 account) => account != UInt160.Zero && (BalanceOf(account) > GetDelegateThreshold());
         public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_VOTE).Get(from + (ByteString)proposal_index);

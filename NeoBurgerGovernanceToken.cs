@@ -142,9 +142,9 @@ namespace NeoBurger
                 UInt160 current_voter = (UInt160)(((object[])voters.Value)[0]);
                 UInt160 current_delegate = GetDelegate(current_voter);
                 if (current_voter is not null && current_voter.IsValid && (
+                    default_delegate_voted ||
                     GetVote(current_voter, proposal_id) > 0 ||
-                    (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0) ||
-                    default_delegate_voted
+                    (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0)
                 ))
                     sum_votes += BalanceOf(current_voter);
             }
@@ -163,19 +163,25 @@ namespace NeoBurger
                 throw new Exception("Cannot execute proposal after the deadline");
             if (proposal_executed > 0)
                 throw new Exception("Proposal already executed");
-            BigInteger sum_votes = 0;
+
             BigInteger voter_count = voters.Length;
-            bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
-            for (BigInteger i=0;i<voter_count; i++)
+            BigInteger sum_votes = 0;
+            if (voter_count == 0)
+                sum_votes = CountVote(proposal_id);
+            else
             {
-                UInt160 current_voter = voters[(int)i];
-                UInt160 current_delegate = GetDelegate(current_voter);
-                if (current_voter is not null && current_voter.IsValid && (
-                    GetVote(current_voter, proposal_id) > 0 ||
-                    (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0) ||
-                    default_delegate_voted
-                ))
-                    sum_votes += BalanceOf(current_voter);
+                bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
+                for (BigInteger i = 0; i < voter_count; i++)
+                {
+                    UInt160 current_voter = voters[(int)i];
+                    UInt160 current_delegate = GetDelegate(current_voter);
+                    if (current_voter is not null && current_voter.IsValid && (
+                        default_delegate_voted ||
+                        GetVote(current_voter, proposal_id) > 0 ||
+                        (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0)
+                    ))
+                        sum_votes += BalanceOf(current_voter);
+                }
             }
             if (sum_votes > TotalSupply() / 2)
             {

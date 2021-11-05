@@ -139,13 +139,14 @@ namespace NeoBurger
             bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
             while (voters.Next())
             {
-                UInt160 current_voter = (UInt160)(((object[])voters.Value)[0]);
+                byte[] current_vote_bytes = (byte[])((object[])voters.Value)[0];
+                UInt160 current_voter = (UInt160)current_vote_bytes[^20..];
                 UInt160 current_delegate = GetDelegate(current_voter);
-                if (current_voter is not null && current_voter.IsValid && (
+                if (
                     default_delegate_voted ||
                     GetVote(current_voter, proposal_id) > 0 ||
                     (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0)
-                ))
+                )
                     sum_votes += BalanceOf(current_voter);
             }
             return sum_votes;
@@ -174,12 +175,14 @@ namespace NeoBurger
                 for (BigInteger i = 0; i < voter_count; i++)
                 {
                     UInt160 current_voter = voters[(int)i];
+                    //if (current_voter is null || !current_voter.IsValid)
+                    //    throw new Exception(current_voter);
                     UInt160 current_delegate = GetDelegate(current_voter);
-                    if (current_voter is not null && current_voter.IsValid && (
+                    if (
                         default_delegate_voted ||
                         GetVote(current_voter, proposal_id) > 0 ||
                         (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0)
-                    ))
+                    )
                         sum_votes += BalanceOf(current_voter);
                 }
             }

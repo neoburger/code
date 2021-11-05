@@ -141,13 +141,21 @@ namespace NeoBurger
             {
                 byte[] current_vote_bytes = (byte[])((object[])voters.Value)[0];
                 UInt160 current_voter = (UInt160)current_vote_bytes[^20..];
-                UInt160 current_delegate = GetDelegate(current_voter);
-                if (
-                    default_delegate_voted ||
-                    GetVote(current_voter, proposal_id) > 0 ||
-                    (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0)
-                )
+                if (GetVote(current_voter, proposal_id) > 0)
                     sum_votes += BalanceOf(current_voter);
+                else {
+                    UInt160 current_delegate = GetDelegate(current_voter);
+                    if (IsValidDelegate(current_delegate))
+                    {
+                        if (GetVote(current_delegate, proposal_id) > 0)
+                            sum_votes += BalanceOf(current_voter);
+                    }
+                    else
+                    {
+                        if (default_delegate_voted)
+                            sum_votes += BalanceOf(current_voter);
+                    }
+                }
             }
             return sum_votes;
         }
@@ -177,13 +185,22 @@ namespace NeoBurger
                     UInt160 current_voter = voters[(int)i];
                     //if (current_voter is null || !current_voter.IsValid)
                     //    throw new Exception(current_voter);
-                    UInt160 current_delegate = GetDelegate(current_voter);
-                    if (
-                        default_delegate_voted ||
-                        GetVote(current_voter, proposal_id) > 0 ||
-                        (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0)
-                    )
+                    if (GetVote(current_voter, proposal_id) > 0)
                         sum_votes += BalanceOf(current_voter);
+                    else
+                    {
+                        UInt160 current_delegate = GetDelegate(current_voter);
+                        if (IsValidDelegate(current_delegate))
+                        {
+                            if (GetVote(current_delegate, proposal_id) > 0)
+                                sum_votes += BalanceOf(current_voter);
+                        }
+                        else
+                        {
+                            if (default_delegate_voted)
+                                sum_votes += BalanceOf(current_voter);
+                        }
+                    }
                 }
             }
             if (sum_votes > TotalSupply() / 2)

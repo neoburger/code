@@ -55,7 +55,7 @@ namespace NeoBurger
         public static UInt160 GetDefaultDelegate() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE });
         public static BigInteger GetDefaultDelegateBalance() => BalanceOf(GetDefaultDelegate());
         public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD });
-        public static bool IsValidDelegate(UInt160 account) => account != UInt160.Zero && (BalanceOf(account) > GetDelegateThreshold());
+        public static bool IsValidDelegate(UInt160 account) => account is not null && account.IsValid && (BalanceOf(account) > GetDelegateThreshold());
         public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_index).Get(from);
         public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_id).Find();
 
@@ -132,6 +132,25 @@ namespace NeoBurger
                 vote_map.Delete(from);
         }
 
+        public static BigInteger CountVote(BigInteger proposal_id)
+        {
+            BigInteger sum_votes = 0;
+            Iterator voters = new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_id).Find();
+            bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
+            while (voters.Next())
+            {
+                UInt160 current_voter = (UInt160)(((object[])voters.Value)[0]);
+                UInt160 current_delegate = GetDelegate(current_voter);
+                if (current_voter is not null && current_voter.IsValid && (
+                    GetVote(current_voter, proposal_id) > 0 ||
+                    (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0) ||
+                    default_delegate_voted
+                ))
+                    sum_votes += BalanceOf(current_voter);
+            }
+            return sum_votes;
+        }
+
         public static object ExecuteProposal(BigInteger proposal_id, UInt160[] voters)
         {
             object[] attributes = ProposalAttributes(proposal_id);
@@ -151,11 +170,11 @@ namespace NeoBurger
             {
                 UInt160 current_voter = voters[(int)i];
                 UInt160 current_delegate = GetDelegate(current_voter);
-                if (
+                if (current_voter is not null && current_voter.IsValid && (
                     GetVote(current_voter, proposal_id) > 0 ||
                     (IsValidDelegate(current_delegate) && GetVote(current_delegate, proposal_id) > 0) ||
                     default_delegate_voted
-                )
+                ))
                     sum_votes += BalanceOf(current_voter);
             }
             if (sum_votes > TotalSupply() / 2)

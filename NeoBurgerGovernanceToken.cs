@@ -57,7 +57,7 @@ namespace NeoBurger
         public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD });
         public static bool IsValidDelegate(UInt160 account) => account is not null && account.IsValid && (BalanceOf(account) > GetDelegateThreshold());
         public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index).Get(from);
-        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find();
+        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
 
 
         public static void _deploy(object data, bool update)
@@ -135,12 +135,12 @@ namespace NeoBurger
         public static BigInteger CountVote(BigInteger proposal_id)
         {
             BigInteger sum_votes = 0;
-            Iterator voters = new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find();
+            Iterator voters = new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id)
+                .Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
             bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
             while (voters.Next())
             {
-                byte[] current_vote_bytes = (byte[])((object[])voters.Value)[0];
-                UInt160 current_voter = (UInt160)current_vote_bytes[^20..];
+                UInt160 current_voter = (UInt160)(byte[])voters.Value;
                 if (GetVote(current_voter, proposal_id) > 0)
                     sum_votes += BalanceOf(current_voter);
                 else {

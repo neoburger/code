@@ -38,12 +38,12 @@ namespace NeoBurger
 
         public static object[] ProposalAttributes(BigInteger id)
         {
-            StorageMap proposal_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)id);
+            StorageMap proposal_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)id);
             UInt160 scripthash = (UInt160)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_SCRIPT_HASH });
             string method = proposal_map.Get(new byte[] { PREFIX_PROPOSAL_METHOD });
             BigInteger arg_count = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_ARG_COUNT });
             ByteString[] args = new ByteString[(int)arg_count];
-            StorageMap arg_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)id + PREFIX_PROPOSAL_ARG);
+            StorageMap arg_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)id + (ByteString)new byte[] { PREFIX_PROPOSAL_ARG });
             for (BigInteger j = 1; j <= arg_count; j++)
                 args[(int)j - 1] = arg_map.Get((ByteString)j);
             BigInteger voting_deadline = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
@@ -56,8 +56,8 @@ namespace NeoBurger
         public static BigInteger GetDefaultDelegateBalance() => BalanceOf(GetDefaultDelegate());
         public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD });
         public static bool IsValidDelegate(UInt160 account) => account is not null && account.IsValid && (BalanceOf(account) > GetDelegateThreshold());
-        public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_index).Get(from);
-        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_id).Find();
+        public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index).Get(from);
+        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find();
 
 
         public static void _deploy(object data, bool update)
@@ -95,12 +95,12 @@ namespace NeoBurger
                 throw new Exception("Too short voting period");
             BigInteger proposal_id = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID });
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID }, proposal_id + 1);
-            StorageMap proposal_id_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)proposal_id);
+            StorageMap proposal_id_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)proposal_id);
             proposal_id_map.Put(new byte[] { PREFIX_PROPOSAL_SCRIPT_HASH }, scripthash);
             proposal_id_map.Put(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE }, voting_period + Runtime.Time);
             proposal_id_map.Put(new byte[] { PREFIX_PROPOSAL_METHOD }, method);
             proposal_id_map.Put(new byte[] { PREFIX_PROPOSAL_ARG_COUNT }, args.Length);
-            StorageMap arg_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)proposal_id + PREFIX_PROPOSAL_ARG);
+            StorageMap arg_map = new(Storage.CurrentContext, (ByteString)new byte[]{ PREFIX_PROPOSAL } + (ByteString)proposal_id + (ByteString)new byte[] { PREFIX_PROPOSAL_ARG });
             for(BigInteger j = 1; j <= args.Length; j++)
                 arg_map.Put((ByteString)j, args[(int)j - 1]);
             return proposal_id;
@@ -119,13 +119,13 @@ namespace NeoBurger
         public static void Vote(UInt160 from, BigInteger proposal_index, bool for_or_against)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(from));
-            StorageMap proposal_map = new(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)proposal_index);
+            StorageMap proposal_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)proposal_index);
             BigInteger voting_deadline = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
             if (voting_deadline == 0)
                 throw new Exception("The proposal does not exist");
             if(Runtime.Time > voting_deadline)
                 throw new Exception("Cannot vote after the deadline");
-            StorageMap vote_map = new(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_index);
+            StorageMap vote_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index);
             if (for_or_against)
                 vote_map.Put(from, 1);
             else
@@ -135,7 +135,7 @@ namespace NeoBurger
         public static BigInteger CountVote(BigInteger proposal_id)
         {
             BigInteger sum_votes = 0;
-            Iterator voters = new StorageMap(Storage.CurrentContext, PREFIX_VOTE + (ByteString)proposal_id).Find();
+            Iterator voters = new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find();
             bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
             while (voters.Next())
             {
@@ -188,7 +188,7 @@ namespace NeoBurger
             }
             if (sum_votes > TotalSupply() / 2)
             {
-                new StorageMap(Storage.CurrentContext, PREFIX_PROPOSAL + (ByteString)proposal_id)
+                new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)proposal_id)
                     .Put(new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME }, Runtime.Time);
                 return Contract.Call(scripthash, method, CallFlags.All, args);
             }

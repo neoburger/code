@@ -19,7 +19,6 @@ namespace NeoBurger
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 INITIAL_HOLDER = default;
         private static readonly byte PREFIX_PROPOSAL = 0x03;
-        private static readonly byte PREFIX_PROPOSAL_VOTING_DEADLINE = 0x04;
         private static readonly byte PREFIX_PROPOSAL_EXECUTED_TIME = 0x05;
         private static readonly byte PREFIX_DELEGATE = 0x81;
         private static readonly byte PREFIX_DEFAULT_DELEGATE = 0x82;
@@ -116,8 +115,9 @@ namespace NeoBurger
         public static void Vote(UInt160 from, BigInteger proposal_index, bool for_or_against)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(from));
-            StorageMap proposal_voting_deadline_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
-            BigInteger voting_deadline = (BigInteger)proposal_voting_deadline_map.Get((ByteString)proposal_index);
+            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)proposal_index);
+            BigInteger voting_deadline = proposal_attributes.voting_deadline;
             if (voting_deadline == 0)
                 throw new Exception("The proposal does not exist");
             if(Runtime.Time > voting_deadline)

@@ -71,7 +71,6 @@ namespace NeoBurger
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD }, 100_000_000_000_000);
             }
         }
-
         public static void BecomeDefaultDelegate(UInt160 account)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(account));
@@ -92,7 +91,7 @@ namespace NeoBurger
         public static BigInteger NewProposal(BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
         {
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
-            if (proposal_id_map.GetObject((ByteString)proposal_id) is not null || ((ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)(proposal_id - 1))).id != proposal_id - 1)
+            if ((BigInteger)proposal_id_map.Get((ByteString)proposal_id) != 0 || ((ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)(proposal_id - 1))).id != proposal_id - 1)
                 throw new Exception("Invalid proposal id");
             ProposalAttributesStruct proposal_attributes = new();
             proposal_attributes.id = proposal_id;

@@ -219,7 +219,6 @@ namespace NeoBurger
 
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
-            return;
         }
 
         public static void Update(ByteString nefFile, string manifest)

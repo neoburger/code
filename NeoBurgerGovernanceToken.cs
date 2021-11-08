@@ -58,17 +58,14 @@ namespace NeoBurger
 
         public static void _deploy(object data, bool update)
         {
-            if (!update)
-            {
-                StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
-                ProposalAttributesStruct proposal_attributes = new();
-                proposal_attributes.id = 0;
-                proposal_id_map.PutObject((ByteString)(BigInteger)0, proposal_attributes);
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD }, 86400000 * 7);
-                Mint(INITIAL_HOLDER, 10_000_000_000_000_000);
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, INITIAL_HOLDER);
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD }, 100_000_000_000_000);
-            }
+            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            ProposalAttributesStruct proposal_attributes = new();
+            proposal_attributes.id = 0;
+            proposal_id_map.PutObject((ByteString)(BigInteger)0, proposal_attributes);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD }, 86400000 * 7);
+            Mint(INITIAL_HOLDER, 10_000_000_000_000_000);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, INITIAL_HOLDER);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD }, 100_000_000_000_000);
         }
         public static void BecomeDefaultDelegate(UInt160 account)
         {

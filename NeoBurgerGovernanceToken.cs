@@ -18,7 +18,6 @@ namespace NeoBurger
     {
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 INITIAL_HOLDER = default;
-        private static readonly byte PREFIX_PROPOSAL_ID = 0x02;
         private static readonly byte PREFIX_PROPOSAL = 0x03;
         private static readonly byte PREFIX_PROPOSAL_VOTING_DEADLINE = 0x04;
         private static readonly byte PREFIX_PROPOSAL_EXECUTED_TIME = 0x05;
@@ -31,17 +30,14 @@ namespace NeoBurger
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
         public static BigInteger GetVotingPeriod() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD });
-        public static BigInteger GetNextProposalID() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID });
 
         public static object[] ProposalAttributes(BigInteger id)
         {
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
             ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)id);
-            StorageMap proposal_voting_deadline_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
-            BigInteger voting_end_time = (BigInteger)proposal_voting_deadline_map.Get((ByteString)id);
             StorageMap proposal_executed_time_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
             BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get(new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
-            return new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, voting_end_time, executed_time };
+            return new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.voting_deadline, executed_time };
         }
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
@@ -54,16 +50,21 @@ namespace NeoBurger
 
         struct ProposalAttributesStruct
         {
+            public BigInteger id;
             public UInt160 scripthash;
             public string method;
             public ByteString[] args;
+            public BigInteger voting_deadline;
         }
 
         public static void _deploy(object data, bool update)
         {
             if (!update)
             {
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID }, 1);
+                StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+                ProposalAttributesStruct proposal_attributes = new();
+                proposal_attributes.id = 0;
+                proposal_id_map.PutObject((ByteString)(BigInteger)0, proposal_attributes);
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD }, 86400000 * 7);
                 Mint(INITIAL_HOLDER, 10_000_000_000_000_000);
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, INITIAL_HOLDER);
@@ -88,18 +89,18 @@ namespace NeoBurger
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD }, time_period);
         }
-        public static BigInteger NewProposal(UInt160 scripthash, string method, ByteString[] args)
+        public static BigInteger NewProposal(BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
         {
-            BigInteger proposal_id = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID });
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID }, proposal_id + 1);
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            if (proposal_id_map.GetObject((ByteString)proposal_id) is not null || ((ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)(proposal_id - 1))).id != proposal_id - 1)
+                throw new Exception("Invalid proposal id");
             ProposalAttributesStruct proposal_attributes = new();
+            proposal_attributes.id = proposal_id;
             proposal_attributes.scripthash = scripthash;
             proposal_attributes.method = method;
             proposal_attributes.args = args;
+            proposal_attributes.voting_deadline = Runtime.Time + GetVotingPeriod();
             proposal_id_map.PutObject((ByteString)proposal_id, proposal_attributes);
-            StorageMap proposal_voting_end_time_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
-            proposal_voting_end_time_map.Put((ByteString)proposal_id, Runtime.Time + GetVotingPeriod());
             return proposal_id;
         }
 

@@ -42,10 +42,10 @@ namespace NeoBurger
             UInt160 scripthash = (UInt160)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_SCRIPT_HASH });
             string method = proposal_map.Get(new byte[] { PREFIX_PROPOSAL_METHOD });
             BigInteger arg_count = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_ARG_COUNT });
-            ByteString[] args = new ByteString[(int)arg_count];
+            ByteString[] args = new ByteString[(uint)arg_count];
             StorageMap arg_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)id + (ByteString)new byte[] { PREFIX_PROPOSAL_ARG });
-            for (BigInteger j = 1; j <= arg_count; j++)
-                args[(int)j - 1] = arg_map.Get((ByteString)j);
+            for (BigInteger j = 0; j < arg_count; j++)
+                args[(uint)j] = arg_map.Get((ByteString)j);
             BigInteger voting_deadline = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_VOTING_DEADLINE });
             BigInteger executed_time = (BigInteger)proposal_map.Get(new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
             return new object[] { scripthash, method, args, voting_deadline, executed_time };
@@ -101,8 +101,9 @@ namespace NeoBurger
             proposal_id_map.Put(new byte[] { PREFIX_PROPOSAL_METHOD }, method);
             proposal_id_map.Put(new byte[] { PREFIX_PROPOSAL_ARG_COUNT }, args.Length);
             StorageMap arg_map = new(Storage.CurrentContext, (ByteString)new byte[]{ PREFIX_PROPOSAL } + (ByteString)proposal_id + (ByteString)new byte[] { PREFIX_PROPOSAL_ARG });
-            for(BigInteger j = 1; j <= args.Length; j++)
-                arg_map.Put((ByteString)j, args[(int)j - 1]);
+            BigInteger args_length = args.Length;
+            for (BigInteger j = 0; j < args_length; j++)
+                arg_map.Put((ByteString)j, args[(uint)j]);
             return proposal_id;
         }
 
@@ -182,7 +183,7 @@ namespace NeoBurger
                 bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
                 for (BigInteger i = 0; i < voter_count; i++)
                 {
-                    UInt160 current_voter = voters[(int)i];
+                    UInt160 current_voter = voters[(uint)i];
                     //if (current_voter is null || !current_voter.IsValid)
                     //    throw new Exception(current_voter);
                     if (GetVote(current_voter, proposal_id) > 0)

@@ -81,7 +81,7 @@ namespace NeoBurger
             if (to_account_balance > default_delegate_balance && to_account_balance > GetDelegateThreshold())
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, account);
             else
-                throw new Exception((ByteString)default_delegate_balance);
+                throw new Exception("No enough tokens. You need "+(ByteString)default_delegate_balance+" NOBUGs to be the default delegate");
         }
 
         public static void SetMinimalTimePeriodForVoting(BigInteger minimal_time_period)
@@ -211,7 +211,10 @@ namespace NeoBurger
                 return Contract.Call(scripthash, method, CallFlags.All, args);
             }
             else
-                throw new Exception((ByteString)sum_votes);
+                if(sum_votes != 0)
+                    throw new Exception("Not enough votes. Got "+(ByteString)sum_votes+ " votes from given array `UInt160[] voters`");
+                else
+                    throw new Exception("No vote counted from given array `UInt160[] voters`");
         }
 
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)

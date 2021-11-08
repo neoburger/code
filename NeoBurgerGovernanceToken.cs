@@ -31,6 +31,7 @@ namespace NeoBurger
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
         public static BigInteger GetVotingPeriod() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD });
+        public static BigInteger GetNextProposalID() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_ID });
 
         public static object[] ProposalAttributes(BigInteger id)
         {

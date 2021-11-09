@@ -109,8 +109,6 @@ namespace NeoBurger
             StorageMap proposal_id_map = new(Storage.CurrentContext, PREFIX_PROPOSAL);
             ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)proposal_index);
             BigInteger voting_deadline = proposal_attributes.voting_deadline;
-            if (voting_deadline == 0)
-                throw new Exception("The proposal does not exist");
             if(Runtime.Time > voting_deadline)
                 throw new Exception("Cannot vote after the deadline");
             StorageMap vote_map = new(Storage.CurrentContext, (ByteString)PREFIX_VOTE + (ByteString)proposal_index);

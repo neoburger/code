@@ -19,12 +19,12 @@ namespace NeoBurger
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 INITIAL_HOLDER = default;
         private static readonly BigInteger VOTING_PERIOD = 86400000 * 7;
-        private static readonly byte PREFIX_PROPOSAL = 0x03;
-        private static readonly byte PREFIX_PROPOSAL_EXECUTED_TIME = 0x05;
-        private static readonly byte PREFIX_DELEGATE = 0x81;
-        private static readonly byte PREFIX_DEFAULT_DELEGATE = 0x82;
-        private static readonly byte PREFIX_DELEGATE_THRESHOLD = 0x83;
-        private static readonly byte PREFIX_VOTE = 0xc1;
+        private static readonly byte[] PREFIX_PROPOSAL = new byte[] { 0x03 };
+        private static readonly byte[] PREFIX_PROPOSAL_EXECUTED_TIME = new byte[] { 0x05 };
+        private static readonly byte[] PREFIX_DELEGATE = new byte[] { 0x81 };
+        private static readonly byte[] PREFIX_DEFAULT_DELEGATE = new byte[] { 0x82 };
+        private static readonly byte[] PREFIX_DELEGATE_THRESHOLD = new byte[] { 0x83 };
+        private static readonly byte[] PREFIX_VOTE = new byte[] { 0xc1 };
 
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
@@ -32,20 +32,20 @@ namespace NeoBurger
 
         public static object[] ProposalAttributes(BigInteger id)
         {
-            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            StorageMap proposal_id_map = new(Storage.CurrentContext, PREFIX_PROPOSAL);
             ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)id);
-            StorageMap proposal_executed_time_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
-            BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get(new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
+            StorageMap proposal_executed_time_map = new(Storage.CurrentContext, PREFIX_PROPOSAL_EXECUTED_TIME);
+            BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get(PREFIX_PROPOSAL_EXECUTED_TIME);
             return new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.voting_deadline, executed_time };
         }
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
-        public static UInt160 GetDefaultDelegate() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE });
+        public static UInt160 GetDefaultDelegate() => (UInt160)Storage.Get(Storage.CurrentContext, PREFIX_DEFAULT_DELEGATE);
         public static BigInteger GetDefaultDelegateBalance() => BalanceOf(GetDefaultDelegate());
-        public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD });
+        public static BigInteger GetDelegateThreshold() => (BigInteger)Storage.Get(Storage.CurrentContext, PREFIX_DELEGATE_THRESHOLD);
         public static bool IsValidDelegate(UInt160 account) => account is not null && account.IsValid && (BalanceOf(account) > GetDelegateThreshold());
-        public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index).Get(from);
-        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
+        public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, (ByteString)PREFIX_VOTE + (ByteString)proposal_index).Get(from);
+        public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, (ByteString)PREFIX_VOTE + (ByteString)proposal_id).Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
 
         struct ProposalAttributesStruct
         {
@@ -58,29 +58,29 @@ namespace NeoBurger
 
         public static void _deploy(object data, bool update)
         {
-            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            StorageMap proposal_id_map = new(Storage.CurrentContext, PREFIX_PROPOSAL);
             ProposalAttributesStruct proposal_attributes = new();
             proposal_attributes.id = 0;
             proposal_id_map.PutObject((ByteString)(BigInteger)0, proposal_attributes);
             Mint(INITIAL_HOLDER, 10_000_000_000_000_000);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, INITIAL_HOLDER);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD }, 100_000_000_000_000);
+            Storage.Put(Storage.CurrentContext, PREFIX_DEFAULT_DELEGATE, INITIAL_HOLDER);
+            Storage.Put(Storage.CurrentContext, PREFIX_DELEGATE_THRESHOLD, 100_000_000_000_000);
         }
         public static void BecomeDefaultDelegate(UInt160 account)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(account));
-            UInt160 default_delegate = (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE });
+            UInt160 default_delegate = (UInt160)Storage.Get(Storage.CurrentContext, PREFIX_DEFAULT_DELEGATE);
             BigInteger to_account_balance = BalanceOf(account);
             BigInteger default_delegate_balance = BalanceOf(default_delegate);
             if (to_account_balance > default_delegate_balance && to_account_balance > GetDelegateThreshold())
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, account);
+                Storage.Put(Storage.CurrentContext, PREFIX_DEFAULT_DELEGATE, account);
             else
                 throw new Exception("No enough tokens. You need "+(ByteString)default_delegate_balance+" NOBUGs to be the default delegate");
         }
 
         public static BigInteger NewProposal(BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
         {
-            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            StorageMap proposal_id_map = new(Storage.CurrentContext, PREFIX_PROPOSAL);
             if ((BigInteger)proposal_id_map.Get((ByteString)proposal_id) != 0 || ((ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)(proposal_id - 1))).id != proposal_id - 1)
                 throw new Exception("Invalid proposal id");
             ProposalAttributesStruct proposal_attributes = new();
@@ -106,14 +106,14 @@ namespace NeoBurger
         public static void Vote(UInt160 from, BigInteger proposal_index, bool for_or_against)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(from));
-            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            StorageMap proposal_id_map = new(Storage.CurrentContext, PREFIX_PROPOSAL);
             ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)proposal_index);
             BigInteger voting_deadline = proposal_attributes.voting_deadline;
             if (voting_deadline == 0)
                 throw new Exception("The proposal does not exist");
             if(Runtime.Time > voting_deadline)
                 throw new Exception("Cannot vote after the deadline");
-            StorageMap vote_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index);
+            StorageMap vote_map = new(Storage.CurrentContext, (ByteString)PREFIX_VOTE + (ByteString)proposal_index);
             if (for_or_against)
                 vote_map.Put(from, 1);
             else
@@ -123,7 +123,7 @@ namespace NeoBurger
         public static BigInteger CountVote(BigInteger proposal_id)
         {
             BigInteger sum_votes = 0;
-            Iterator voters = new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id)
+            Iterator voters = new StorageMap(Storage.CurrentContext, (ByteString)PREFIX_VOTE + (ByteString)proposal_id)
                 .Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
             bool default_delegate_voted = GetVote(GetDefaultDelegate(), proposal_id) > 0;
             while (voters.Next())
@@ -193,8 +193,8 @@ namespace NeoBurger
             }
             if (sum_votes > TotalSupply() / 2)
             {
-                new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PROPOSAL } + (ByteString)proposal_id)
-                    .Put(new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME }, Runtime.Time);
+                new StorageMap(Storage.CurrentContext, (ByteString)PREFIX_PROPOSAL + (ByteString)proposal_id)
+                    .Put(PREFIX_PROPOSAL_EXECUTED_TIME, Runtime.Time);
                 return Contract.Call(scripthash, method, CallFlags.All, args);
             }
             else

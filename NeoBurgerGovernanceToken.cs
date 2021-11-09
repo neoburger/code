@@ -18,17 +18,17 @@ namespace NeoBurger
     {
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 INITIAL_HOLDER = default;
+        private static readonly BigInteger VOTING_PERIOD = 86400000 * 7;
         private static readonly byte PREFIX_PROPOSAL = 0x03;
         private static readonly byte PREFIX_PROPOSAL_EXECUTED_TIME = 0x05;
         private static readonly byte PREFIX_DELEGATE = 0x81;
         private static readonly byte PREFIX_DEFAULT_DELEGATE = 0x82;
         private static readonly byte PREFIX_DELEGATE_THRESHOLD = 0x83;
         private static readonly byte PREFIX_VOTE = 0xc1;
-        private static readonly byte PREFIX_VOTING_PERIOD = 0xc2;
 
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
-        public static BigInteger GetVotingPeriod() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD });
+        public static BigInteger GetVotingPeriod() => VOTING_PERIOD;
 
         public static object[] ProposalAttributes(BigInteger id)
         {
@@ -62,7 +62,6 @@ namespace NeoBurger
             ProposalAttributesStruct proposal_attributes = new();
             proposal_attributes.id = 0;
             proposal_id_map.PutObject((ByteString)(BigInteger)0, proposal_attributes);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD }, 86400000 * 7);
             Mint(INITIAL_HOLDER, 10_000_000_000_000_000);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DEFAULT_DELEGATE }, INITIAL_HOLDER);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_DELEGATE_THRESHOLD }, 100_000_000_000_000);
@@ -79,11 +78,6 @@ namespace NeoBurger
                 throw new Exception("No enough tokens. You need "+(ByteString)default_delegate_balance+" NOBUGs to be the default delegate");
         }
 
-        public static void SetMinimalTimePeriodForVoting(BigInteger time_period)
-        {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_VOTING_PERIOD }, time_period);
-        }
         public static BigInteger NewProposal(BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
         {
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
@@ -94,7 +88,7 @@ namespace NeoBurger
             proposal_attributes.scripthash = scripthash;
             proposal_attributes.method = method;
             proposal_attributes.args = args;
-            proposal_attributes.voting_deadline = Runtime.Time + GetVotingPeriod();
+            proposal_attributes.voting_deadline = Runtime.Time + VOTING_PERIOD;
             proposal_id_map.PutObject((ByteString)proposal_id, proposal_attributes);
             return proposal_id;
         }

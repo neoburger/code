@@ -29,9 +29,9 @@ namespace NeoBurger
 
         public static void ChangeTEE(UInt160 newTEE)
         {
-            ByteString new_tee_bytearray = (ByteString)new byte[] { PREFIX_TEE };
-            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new_tee_bytearray)));
-            Storage.Put(Storage.CurrentContext, new_tee_bytearray, newTEE);
+            ByteString newTEEBytearray = (ByteString)new byte[] { PREFIX_TEE };
+            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, newTEEBytearray)));
+            Storage.Put(Storage.CurrentContext, newTEEBytearray, newTEE);
         }
 
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)

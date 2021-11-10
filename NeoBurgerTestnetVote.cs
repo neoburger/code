@@ -65,14 +65,19 @@ namespace NeoBurger
 
         public static void SetEmergencyPause(BigInteger proposal_id, bool pause)
         {
-            StorageMap proposal_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
-            ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_map.GetObject((ByteString)proposal_id);
-            ExecutionEngine.Assert(Runtime.CheckWitness(OWNER) || Runtime.CheckWitness(proposal_attributes.provider));
             StorageMap proposal_paused_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_PAUSED });
             if (pause)
+            {
+                StorageMap proposal_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+                ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_map.GetObject((ByteString)proposal_id);
+                ExecutionEngine.Assert(Runtime.CheckWitness(OWNER) || Runtime.CheckWitness(proposal_attributes.provider));
                 proposal_paused_map.Put((ByteString)proposal_id, 1);
+            }
             else
+            {
+                ExecutionEngine.Assert(Runtime.CheckWitness(OWNER));
                 proposal_paused_map.Put((ByteString)proposal_id, 0);
+            }
         }
 
         public static BigInteger NewProposal(UInt160 provider, BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)

@@ -19,20 +19,22 @@ namespace NeoBurger
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private const UInt160 OWNER = default;
         private const ulong VOTING_PERIOD = 86400000 * 7;
+        private const byte PREFIX_PROPOSAL_LATEST_ID = 0x02;
         private const byte PREFIX_PROPOSAL = 0x03;
         private const byte PREFIX_PROPOSAL_EXECUTED_TIME = 0x05;
         private const byte PREFIX_DELEGATE = 0x81;
         private const byte PREFIX_VOTE = 0xc1;
 
         public static BigInteger GetVotingPeriod() => VOTING_PERIOD;
+        public static BigInteger GetLatestProposalID() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_LATEST_ID });
 
         public static object[] ProposalAttributes(BigInteger id)
         {
-            StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
-            ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)id);
+            StorageMap proposal_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
+            ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_map.GetObject((ByteString)id);
             StorageMap proposal_executed_time_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
             BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get((ByteString)id);
-            return new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.voting_deadline, executed_time };
+            return new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.created_time, proposal_attributes.voting_deadline, executed_time };
         }
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
@@ -45,6 +47,7 @@ namespace NeoBurger
             public UInt160 scripthash;
             public string method;
             public ByteString[] args;
+            public BigInteger created_time;
             public BigInteger voting_deadline;
         }
 
@@ -60,12 +63,17 @@ namespace NeoBurger
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
             if ((BigInteger)proposal_id_map.Get((ByteString)proposal_id) != 0 || ((ProposalAttributesStruct)proposal_id_map.GetObject((ByteString)(proposal_id - 1))).id != proposal_id - 1)
                 throw new Exception("Invalid proposal id");
+
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_LATEST_ID }, (ByteString)proposal_id);
+            
             ProposalAttributesStruct proposal_attributes = new();
             proposal_attributes.id = proposal_id;
             proposal_attributes.scripthash = scripthash;
             proposal_attributes.method = method;
             proposal_attributes.args = args;
-            proposal_attributes.voting_deadline = Runtime.Time + VOTING_PERIOD;
+            BigInteger current_time = Runtime.Time;
+            proposal_attributes.created_time = current_time;
+            proposal_attributes.voting_deadline = current_time + VOTING_PERIOD;
             proposal_id_map.PutObject((ByteString)proposal_id, proposal_attributes);
             return proposal_id;
         }

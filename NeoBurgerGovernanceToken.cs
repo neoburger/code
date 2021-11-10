@@ -15,6 +15,8 @@ namespace NeoBurger
     [ContractPermission("*", "*")]
     public class NeoBurgerGovernanceToken : Nep17Token
     {
+        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
+        private static readonly UInt160 TEE_ADDRESS = default;
         private const byte PREFIX_TEE = 0x50;
         private const byte PREFIX_PASSED_PROPOSAL = 0x90;
         private const byte PREFIX_PAUSED = 0x90;
@@ -25,6 +27,12 @@ namespace NeoBurger
         public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
         public static Iterator PassedProposals() => Storage.Find(Storage.CurrentContext, new byte[] { PREFIX_PASSED_PROPOSAL }, FindOptions.RemovePrefix);
         public static Iterator PausedProposals() => Storage.Find(Storage.CurrentContext, new byte[] { PREFIX_PAUSED }, FindOptions.RemovePrefix);
+
+        public static void _deploy(object data, bool update)
+        {
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, TEE_ADDRESS);
+        }
+
 
         public static void ProposalPassed(BigInteger proposal_id)
         {

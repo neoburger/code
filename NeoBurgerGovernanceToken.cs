@@ -15,7 +15,6 @@ namespace NeoBurger
     [ContractPermission("*", "*")]
     public class NeoBurgerGovernanceToken : Nep17Token
     {
-        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private const byte PREFIX_TEE = 0x50;
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";

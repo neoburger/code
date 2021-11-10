@@ -17,7 +17,7 @@ namespace NeoBurger
     public class NeoBurgerVote:SmartContract
     {
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
-        private const UInt160 OWNER = default;
+        private static readonly UInt160 OWNER = default;
         private const ulong VOTING_PERIOD = 86400000 * 7;
         private const byte PREFIX_PROPOSAL_LATEST_ID = 0x02;
         private const byte PREFIX_PROPOSAL = 0x03;

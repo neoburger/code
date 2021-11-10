@@ -19,18 +19,18 @@ namespace NeoBurger
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
 
-        public static UInt160 GetTEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
+        public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
 
         public static object ExecuteProposal(UInt160 scripthash, string method, ByteString[] args)
         {
-            Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE }));
+            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE })));
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
 
         public static void ChangeTEE(UInt160 newTEE)
         {
             ByteString new_tee_bytearray = (ByteString)new byte[] { PREFIX_TEE };
-            Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new_tee_bytearray));
+            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new_tee_bytearray)));
             Storage.Put(Storage.CurrentContext, new_tee_bytearray, newTEE);
         }
 

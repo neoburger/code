@@ -64,11 +64,10 @@ namespace NeoBurger
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
 
-        public static void ChangeTEE(UInt160 newTEE)
+        public static void SetTEE(UInt160 newTEE)
         {
-            ByteString newTEEBytearray = (ByteString)new byte[] { PREFIX_TEE };
-            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, newTEEBytearray)));
-            Storage.Put(Storage.CurrentContext, newTEEBytearray, newTEE);
+            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, newTEE);
         }
 
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)

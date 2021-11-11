@@ -16,59 +16,60 @@ namespace NeoBurger
     [ContractPermission("*", "*")]
     public class NeoBurgerGovernanceToken : Nep17Token
     {
-        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
-        private static readonly UInt160 TEE_ADDRESS = default;
         private const byte PREFIX_TEE = 0x01;
-        private const byte PREFIX_PASSED_PROPOSAL = 0x02;
-        private const byte PREFIX_CONTRACT_PAUSED = 0x03;
-        private const uint PUBLICITY_PERIOD_BEFORE_EXECUTION = 86400000 * 3;
+        private const byte PREFIX_EXECUTION = 0x02;
+        private const byte PREFIX_PAUSEUNTIL = 0x03;
+
+        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
+        private static readonly UInt160 DEFAULT_TEE = default;
+        private const uint DEFAULT_WAITTIME = 86400000 * 4;
+
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
-
         public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
-        public static Iterator PassedProposals() => Storage.Find(Storage.CurrentContext, new byte[] { PREFIX_PASSED_PROPOSAL }, FindOptions.RemovePrefix);
+        public static bool Proceed() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }) < Runtime.Time;
 
         public static void _deploy(object data, bool update)
         {
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, TEE_ADDRESS);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, DEFAULT_TEE);
         }
 
 
-        public static void ProposalPassed(BigInteger proposal_id)
+        public static void SubmitApprovedExecution(UInt256 digest)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE })) || BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2);
-            Storage.Put(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_PASSED_PROPOSAL } + (ByteString)proposal_id, Runtime.Time);
+            ExecutionEngine.Assert(Runtime.CheckWitness(TEE()));
+            // TODO: RECHECK OPERATOR +
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest, Runtime.Time);
+        }
+
+        public static void SubmitExecution(UInt256 digest)
+        {
+            // TODO: CHECK BALANCE OF CALLER
+            // TODO: RECHECK OPERATOR +
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest, Runtime.Time);
         }
 
         public static void PauseContract()
         {
-            BigInteger currentPauseUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_CONTRACT_PAUSED });
+            BigInteger currentPauseUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
+            // TODO: FIX BELOW
             BigInteger newPauseUntil = Runtime.Time + BigInteger.Pow(2, (int)(BalanceOf(Runtime.CallingScriptHash)/TotalSupply())) * 600000;
-            if (currentPauseUntil < newPauseUntil)
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_CONTRACT_PAUSED }, newPauseUntil);
-            else
-                throw new Exception("contract already paused until timestamp " + (ByteString)currentPauseUntil);
+            // TODO: MIN(OLD, NEW)
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, newPauseUntil);
         }
 
-        public static object ExecuteProposal(BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
+        public static object Execute(UInt160 scripthash, string method, object[] args)
         {
-            if (!Runtime.CheckWitness((UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE })))
-                if (BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2)
-                    return Contract.Call(scripthash, method, CallFlags.All, args);
-                else
-                    throw new Exception("No witness from TEE");
-            ByteString proposalPassedKey = (ByteString)new byte[] { PREFIX_PASSED_PROPOSAL } + (ByteString)proposal_id;
-            if (Runtime.Time - (BigInteger)Storage.Get(Storage.CurrentContext, proposalPassedKey) < PUBLICITY_PERIOD_BEFORE_EXECUTION)
-                throw new Exception("not enough publicity period");
-            if ((BigInteger)Storage.Get(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_CONTRACT_PAUSED }) > Runtime.Time)
-                throw new Exception("contract paused");
-            Storage.Delete(Storage.CurrentContext, proposalPassedKey);
+            ExecutionEngine.Assert(Proceed());
+            // TODO: CALCULATE DIGEST
+            BigInteger timestamp = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest);
+            ExecutionEngine.Assert(timestamp > Runtime.Time + DEFAULT_WAITTIME);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
 
         public static void SetTEE(UInt160 newTEE)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash) || BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2);
+            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, newTEE);
         }
 
@@ -78,7 +79,7 @@ namespace NeoBurger
 
         public static void Update(ByteString nefFile, string manifest)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash) || BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2);
+            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             ContractManagement.Update(nefFile, manifest, null);
         }
     }

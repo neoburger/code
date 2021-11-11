@@ -38,31 +38,33 @@ namespace NeoBurger
         public static void SubmitApprovedExecution(UInt256 digest)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(TEE()));
-            // TODO: RECHECK OPERATOR +
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest, Runtime.Time);
+            StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
+            executionSubmittedTimeMap.Put(digest, Runtime.Time);
         }
 
         public static void SubmitExecution(UInt256 digest)
         {
-            // TODO: CHECK BALANCE OF CALLER
-            // TODO: RECHECK OPERATOR +
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest, Runtime.Time);
+            // TODO: BE AWARE OF LOANS
+            ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2);
+            StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
+            executionSubmittedTimeMap.Put(digest, Runtime.Time);
         }
 
         public static void PauseContract()
         {
             BigInteger currentPauseUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
-            // TODO: FIX BELOW
             BigInteger newPauseUntil = Runtime.Time + BigInteger.Pow(2, (int)(BalanceOf(Runtime.CallingScriptHash)/TotalSupply())) * 600000;
-            // TODO: MIN(OLD, NEW)
+            if (currentPauseUntil > newPauseUntil)
+                newPauseUntil = currentPauseUntil;
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, newPauseUntil);
         }
 
         public static object Execute(UInt160 scripthash, string method, object[] args)
         {
             ExecutionEngine.Assert(Proceed());
-            // TODO: CALCULATE DIGEST
-            BigInteger timestamp = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest);
+            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(scripthash) + StdLib.Serialize(method) + StdLib.Serialize(args));
+            StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
+            BigInteger timestamp = (BigInteger)executionSubmittedTimeMap.Get(digest);
             ExecutionEngine.Assert(timestamp + DEFAULT_WAITTIME > Runtime.Time);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }

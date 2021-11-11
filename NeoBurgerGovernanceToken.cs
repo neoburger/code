@@ -63,7 +63,7 @@ namespace NeoBurger
             ExecutionEngine.Assert(Proceed());
             // TODO: CALCULATE DIGEST
             BigInteger timestamp = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_EXECUTION } + digest);
-            ExecutionEngine.Assert(timestamp > Runtime.Time + DEFAULT_WAITTIME);
+            ExecutionEngine.Assert(timestamp + DEFAULT_WAITTIME > Runtime.Time);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
 

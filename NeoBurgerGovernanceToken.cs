@@ -19,6 +19,8 @@ namespace NeoBurger
         private const byte PREFIX_TEE = 0x01;
         private const byte PREFIX_EXECUTION = 0x02;
         private const byte PREFIX_PAUSEUNTIL = 0x03;
+        private const byte PREFIX_LOCKEDBALANCE = 0x04;
+        private const byte PREFIX_LOCKEDBALANCEFROMACCOUNT = 0x05;
 
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_TEE = default;
@@ -27,13 +29,43 @@ namespace NeoBurger
         public override byte Decimals() => 8;
         public override string Symbol() => "NOBUG";
         public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
-        public static bool Proceed() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }) < Runtime.Time;
+        public static bool NotPaused() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }) < Runtime.Time;
 
         public static void _deploy(object data, bool update)
         {
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, DEFAULT_TEE);
         }
 
+        public static void LockBalance(UInt160 from, BigInteger amount)
+        {
+            ByteString prefixLockedBalance = (ByteString)new byte[] { PREFIX_LOCKEDBALANCE };
+            BigInteger oldLockedBalance = (BigInteger)Storage.Get(Storage.CurrentContext, prefixLockedBalance);
+            if (oldLockedBalance > amount)
+                throw new Exception("Amount specified by you is no larger than the old amount " + oldLockedBalance);
+            ByteString prefixLockedBalanceFromAccount = (ByteString)new byte[] { PREFIX_LOCKEDBALANCEFROMACCOUNT };
+            UInt160 oldLockedAccount = (UInt160)Storage.Get(Storage.CurrentContext, prefixLockedBalanceFromAccount);
+            Storage.Put(Storage.CurrentContext, prefixLockedBalance, amount);
+            Storage.Put(Storage.CurrentContext, prefixLockedBalanceFromAccount, from);
+            UInt160 executingScriptHash = Runtime.ExecutingScriptHash;
+            ExecutionEngine.Assert(Transfer(from, executingScriptHash, amount, null));
+            if (oldLockedBalance > 0)
+                try
+                {
+                    Transfer(executingScriptHash, oldLockedAccount, oldLockedBalance, null);
+                }
+                finally { }
+        }
+
+        public static void ClaimLockedBalance()
+        {
+            BigInteger pausedUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
+            if (pausedUntil > Runtime.Time)
+                throw new Exception("Contract paused until " + pausedUntil);
+            UInt160 fromAccount = (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCEFROMACCOUNT });
+            ExecutionEngine.Assert(Runtime.CheckWitness(fromAccount));
+            BigInteger balance = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCE });
+            ExecutionEngine.Assert(Transfer(Runtime.CallingScriptHash, fromAccount, balance, null));
+        }
 
         public static void SubmitApprovedExecution(UInt256 digest)
         {
@@ -44,7 +76,6 @@ namespace NeoBurger
 
         public static void SubmitExecution(UInt256 digest)
         {
-            // TODO: BE AWARE OF LOANS
             ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2);
             StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
             executionSubmittedTimeMap.Put(digest, Runtime.Time);
@@ -52,16 +83,21 @@ namespace NeoBurger
 
         public static void PauseContract()
         {
+            UInt160 fromAccount = (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCEFROMACCOUNT });
+            ExecutionEngine.Assert(Runtime.CheckWitness(fromAccount));
             BigInteger currentPauseUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
-            BigInteger newPauseUntil = Runtime.Time + BigInteger.Pow(2, (int)(BalanceOf(Runtime.CallingScriptHash)/TotalSupply())) * 600000;
+            BigInteger balance = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCE });
+            BigInteger newPauseUntil = Runtime.Time + BigInteger.Pow(2, (int)(balance / TotalSupply())) * 600000;
             if (currentPauseUntil > newPauseUntil)
                 newPauseUntil = currentPauseUntil;
+            else
+                throw new Exception("Cannot pause the contract longer");
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, newPauseUntil);
         }
 
         public static object Execute(UInt160 scripthash, string method, object[] args)
         {
-            ExecutionEngine.Assert(Proceed());
+            ExecutionEngine.Assert(NotPaused());
             ByteString digest = CryptoLib.Sha256(StdLib.Serialize(scripthash) + StdLib.Serialize(method) + StdLib.Serialize(args));
             StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
             BigInteger timestamp = (BigInteger)executionSubmittedTimeMap.Get(digest);

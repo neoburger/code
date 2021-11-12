@@ -99,7 +99,7 @@ namespace NeoBurger
         public static object Execute(BigInteger id, UInt160 scripthash, string method, object[] args)
         {
             ExecutionEngine.Assert(NotPaused());
-            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(id) + StdLib.Serialize(scripthash) + StdLib.Serialize(method) + StdLib.Serialize(args));
+            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(new object[] { id, scripthash, method, args }));
             StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
             BigInteger timestamp = (BigInteger)executionSubmittedTimeMap.Get(digest);
             BigInteger currentTime = Runtime.Time;

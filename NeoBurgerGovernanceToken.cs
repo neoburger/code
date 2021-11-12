@@ -69,6 +69,7 @@ namespace NeoBurger
         public static void SubmitApprovedExecution(UInt256 digest)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(TEE()));
+            ExecutionEngine.Assert(NotPaused());
             StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
             executionSubmittedTimeMap.Put(digest, Runtime.Time);
         }

@@ -18,9 +18,10 @@ namespace NeoBurger
     {
         private const byte PREFIX_TEE = 0x01;
         private const byte PREFIX_EXECUTION = 0x02;
-        private const byte PREFIX_PAUSEUNTIL = 0x03;
-        private const byte PREFIX_LOCKEDBALANCE = 0x04;
-        private const byte PREFIX_LOCKEDBALANCEFROMACCOUNT = 0x05;
+        private const byte PREFIX_EXECUTED = 0x03;
+        private const byte PREFIX_PAUSEUNTIL = 0x04;
+        private const byte PREFIX_LOCKEDBALANCE = 0x05;
+        private const byte PREFIX_LOCKEDBALANCEFROMACCOUNT = 0x06;
 
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_TEE = default;
@@ -95,13 +96,19 @@ namespace NeoBurger
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, newPauseUntil);
         }
 
-        public static object Execute(UInt160 scripthash, string method, object[] args)
+        public static object Execute(BigInteger id, UInt160 scripthash, string method, object[] args)
         {
             ExecutionEngine.Assert(NotPaused());
-            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(scripthash) + StdLib.Serialize(method) + StdLib.Serialize(args));
+            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(id) + StdLib.Serialize(scripthash) + StdLib.Serialize(method) + StdLib.Serialize(args));
             StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
             BigInteger timestamp = (BigInteger)executionSubmittedTimeMap.Get(digest);
-            ExecutionEngine.Assert(timestamp + DEFAULT_WAITTIME > Runtime.Time);
+            BigInteger currentTime = Runtime.Time;
+            if (timestamp + DEFAULT_WAITTIME > currentTime)
+                throw new Exception("Wait time not fulfilled");
+            StorageMap executedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTED);
+            if ((BigInteger)executedTimeMap.Get(digest) > 0)
+                throw new Exception("Proposal had beed executed");
+            executedTimeMap.Put(digest, currentTime);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
 

@@ -41,8 +41,7 @@ namespace NeoBurger
         {
             ByteString prefixLockedBalance = (ByteString)new byte[] { PREFIX_LOCKEDBALANCE };
             BigInteger oldLockedBalance = (BigInteger)Storage.Get(Storage.CurrentContext, prefixLockedBalance);
-            if (oldLockedBalance > amount)
-                throw new Exception("Amount specified by you is no larger than the old amount " + oldLockedBalance);
+            ExecutionEngine.Assert(oldLockedBalance > amount);
             ByteString prefixLockedBalanceFromAccount = (ByteString)new byte[] { PREFIX_LOCKEDBALANCEFROMACCOUNT };
             UInt160 oldLockedAccount = (UInt160)Storage.Get(Storage.CurrentContext, prefixLockedBalanceFromAccount);
             Storage.Put(Storage.CurrentContext, prefixLockedBalance, amount);
@@ -60,8 +59,7 @@ namespace NeoBurger
         public static void ClaimLockedBalance()
         {
             BigInteger pausedUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
-            if (pausedUntil > Runtime.Time)
-                throw new Exception("Contract paused until " + pausedUntil);
+            ExecutionEngine.Assert(pausedUntil > Runtime.Time);
             UInt160 fromAccount = (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCEFROMACCOUNT });
             ExecutionEngine.Assert(Runtime.CheckWitness(fromAccount));
             BigInteger balance = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCE });
@@ -89,10 +87,8 @@ namespace NeoBurger
             BigInteger currentPauseUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
             BigInteger balance = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_LOCKEDBALANCE });
             BigInteger newPauseUntil = Runtime.Time + BigInteger.Pow(2, (int)(balance / TotalSupply())) * 600000;
-            if (currentPauseUntil > newPauseUntil)
-                newPauseUntil = currentPauseUntil;
-            else
-                throw new Exception("Cannot pause the contract longer");
+            ExecutionEngine.Assert(currentPauseUntil > newPauseUntil);
+            newPauseUntil = currentPauseUntil;
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, newPauseUntil);
         }
 
@@ -103,11 +99,9 @@ namespace NeoBurger
             StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
             BigInteger timestamp = (BigInteger)executionSubmittedTimeMap.Get(digest);
             BigInteger currentTime = Runtime.Time;
-            if (timestamp + DEFAULT_WAITTIME > currentTime)
-                throw new Exception("Wait time not fulfilled");
+            ExecutionEngine.Assert(timestamp + DEFAULT_WAITTIME > currentTime);
             StorageMap executedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTED);
-            if ((BigInteger)executedTimeMap.Get(digest) > 0)
-                throw new Exception("Proposal had beed executed");
+            ExecutionEngine.Assert((BigInteger)executedTimeMap.Get(digest) > 0);
             executedTimeMap.Put(digest, currentTime);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }

@@ -37,7 +37,8 @@ namespace NeoBurger
             BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get((ByteString)id);
             StorageMap proposal_paused_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_PAUSED });
             BigInteger paused = (BigInteger)proposal_paused_map.Get((ByteString)id);
-            return new object[] { proposal_attributes.provider, proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.created_time, proposal_attributes.voting_deadline, paused, executed_time };
+            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(id) + StdLib.Serialize(proposal_attributes.scripthash) + StdLib.Serialize(proposal_attributes.method) + StdLib.Serialize(proposal_attributes.args));
+            return new object[] { proposal_attributes.provider, proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.created_time, proposal_attributes.voting_deadline, paused, executed_time, digest };
         }
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);

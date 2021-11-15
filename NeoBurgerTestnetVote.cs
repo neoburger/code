@@ -142,6 +142,7 @@ namespace NeoBurger
 
         public static void MarkProposalExecuted(BigInteger id, BigInteger time)
         {
+            ExecutionEngine.Assert(Runtime.CheckWitness(OWNER));
             ByteString proposal_executed_time_bytearray = (ByteString)new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME };
             StorageMap proposal_executed_time_map = new(Storage.CurrentContext, proposal_executed_time_bytearray);
             proposal_executed_time_map.Put((ByteString)id, (ByteString)time);

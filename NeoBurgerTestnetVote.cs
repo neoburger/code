@@ -34,7 +34,7 @@ namespace NeoBurger
             ProposalAttributesStruct proposal_attributes = (ProposalAttributesStruct)proposal_map.GetObject((ByteString)id);
             StorageMap proposal_executed_time_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
             BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get((ByteString)id);
-            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { id, proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args }));
+            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.nonce }));
             return new object[] { proposal_attributes.provider, proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.created_time, proposal_attributes.voting_deadline, executed_time, digest };
         }
 
@@ -50,6 +50,7 @@ namespace NeoBurger
             public UInt160 scripthash;
             public string method;
             public ByteString[] args;
+            public BigInteger nonce;
             public BigInteger created_time;
             public BigInteger voting_deadline;
         }
@@ -77,6 +78,7 @@ namespace NeoBurger
             proposal_attributes.scripthash = scripthash;
             proposal_attributes.method = method;
             proposal_attributes.args = args;
+            proposal_attributes.nonce = Runtime.GetRandom();
             BigInteger current_time = Runtime.Time;
             proposal_attributes.created_time = current_time;
             proposal_attributes.voting_deadline = current_time + VOTING_PERIOD;

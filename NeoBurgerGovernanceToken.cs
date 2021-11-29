@@ -19,6 +19,7 @@ namespace NeoBurger
         private const byte PREFIX_EXECUTION = 0x02;
         private const byte PREFIX_EXECUTED = 0x03;
         private const byte PREFIX_PAUSEUNTIL = 0x04;
+        private const byte PREFIX_ROOT = 0x05;
 
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_TEE = default;
@@ -56,6 +57,15 @@ namespace NeoBurger
             executed.Put(digest, now);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
+        public static void Claim(BigInteger num, UInt256[] proof)
+        {
+            // TODO: IMPL
+            // structure: [ scripthash, number ]
+            // StdLib.Deserialize(payload);
+            // verify payload
+            // verify max supply
+            // Mint()
+        }
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
         }
@@ -63,6 +73,11 @@ namespace NeoBurger
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, newTEE);
+        }
+        public static void SetRoot(UInt256 root)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_ROOT }, root);
         }
         public static void PauseDAO()
         {

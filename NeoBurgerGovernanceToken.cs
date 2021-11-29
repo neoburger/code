@@ -19,8 +19,8 @@ namespace NeoBurger
         private const byte PREFIX_EXECUTION = 0x02;
         private const byte PREFIX_EXECUTED = 0x03;
         private const byte PREFIX_PAUSEUNTIL = 0x04;
-        private const byte PREFIX_ROOT = 0x05;
-        private const byte PREFIX_AIRDROPPED = 0x06;
+        private const byte PREFIX_MINTROOT = 0x05;
+        private const byte PREFIX_MINTED = 0x06;
 
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_TEE = default;
@@ -60,26 +60,27 @@ namespace NeoBurger
         }
         public static void Claim(BigInteger num, UInt256[] proof)
         {
+            const byte LEAF = 0x00;
+            const byte INTERNAL = 0x01;
             UInt160 caller = Runtime.CallingScriptHash;
-            StorageMap airdropped = new(Storage.CurrentContext, PREFIX_AIRDROPPED);
-            ExecutionEngine.Assert((BigInteger)airdropped.Get(caller) == 0);
-            const byte leafPrefix = 0x00;
-            const byte nonLeafPrefix = 0x01;
-            UInt256 hash = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { leafPrefix, caller, num }));
-            int proofLength = proof.Length;
-            UInt256 sibling;
-            while(proofLength > 0)
+            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, caller, num }));
+            StorageMap minted = new(Storage.CurrentContext, PREFIX_MINTED);
+            ExecutionEngine.Assert((BigInteger)minted.Get(digest) == 0);
+            foreach (UInt256 sibling in proof)
             {
-                proofLength -= 1;
-                sibling = proof[proofLength];
-                if((BigInteger)hash < (BigInteger)sibling)
-                    hash = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { nonLeafPrefix, hash, sibling}));
+                if ((BigInteger)digest < (BigInteger)sibling)
+                {
+                    digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, digest, sibling }));
+                }
                 else
-                    hash = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { nonLeafPrefix, sibling, hash }));
+                {
+                    digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, sibling, digest }));
+                }
             }
-            ExecutionEngine.Assert(hash == Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_ROOT }));
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_AIRDROPPED }, num);
+            ExecutionEngine.Assert(digest == Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT }));
+            minted.Put(digest, num);
             Mint(caller, num);
+            ExecutionEngine.Assert(TotalSupply() < BigInteger.Pow(2, 64));
         }
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
@@ -89,10 +90,10 @@ namespace NeoBurger
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, newTEE);
         }
-        public static void SetRoot(UInt256 root)
+        public static void SetMintRoot(UInt256 root)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_ROOT }, root);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT }, root);
         }
         public static void PauseDAO()
         {

@@ -1,4 +1,3 @@
-using System;
 using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
@@ -25,7 +24,7 @@ namespace NeoBurger
         private static readonly UInt160 DEFAULT_TEE = default;
         private const uint DEFAULT_WAITTIME = 86400000 * 4;
 
-        public override byte Decimals() => 8;
+        public override byte Decimals() => 10;
         public override string Symbol() => "NOBUG";
         public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
         public static bool NotPaused() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }) < Runtime.Time;
@@ -34,57 +33,42 @@ namespace NeoBurger
         {
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, DEFAULT_TEE);
         }
-
         public static void SubmitApprovedExecution(UInt256 digest)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(TEE()));
             ExecutionEngine.Assert(NotPaused());
-            StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
-            executionSubmittedTimeMap.Put(digest, Runtime.Time);
+            new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Put(digest, Runtime.Time + DEFAULT_WAITTIME);
         }
-
         public static void SubmitExecution(UInt256 digest)
         {
-            ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 2);
-            StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
-            executionSubmittedTimeMap.Put(digest, Runtime.Time);
+            ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) * 2 > TotalSupply());
+            new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Put(digest, Runtime.Time + DEFAULT_WAITTIME / 2);
         }
-
-        public static void PauseContract()
+        public static object Execute(UInt160 scripthash, string method, object[] args, BigInteger nonce)
         {
-            BigInteger balance = BalanceOf(Runtime.CallingScriptHash);
-            ExecutionEngine.Assert(balance > TotalSupply() / 4);
-            BigInteger currentPauseUntil = (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL });
-            BigInteger newPauseUntil = Runtime.Time + BigInteger.Pow(2, (int)(balance / TotalSupply())) * 600000;
-            ExecutionEngine.Assert(currentPauseUntil > newPauseUntil);
-            newPauseUntil = currentPauseUntil;
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, newPauseUntil);
-        }
-
-        public static object Execute(BigInteger id, UInt160 scripthash, string method, object[] args)
-        {
-            ExecutionEngine.Assert(NotPaused());
-            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(new object[] { id, scripthash, method, args }));
-            StorageMap executionSubmittedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTION);
-            BigInteger timestamp = (BigInteger)executionSubmittedTimeMap.Get(digest);
-            BigInteger currentTime = Runtime.Time;
-            ExecutionEngine.Assert(timestamp + DEFAULT_WAITTIME > currentTime);
-            StorageMap executedTimeMap = new(Storage.CurrentContext, PREFIX_EXECUTED);
-            ExecutionEngine.Assert((BigInteger)executedTimeMap.Get(digest) > 0);
-            executedTimeMap.Put(digest, currentTime);
+            ExecutionEngine.Assert(NotPaused() || BalanceOf(Runtime.CallingScriptHash) * 2 > TotalSupply());
+            ByteString digest = CryptoLib.Sha256(StdLib.Serialize(new object[] { scripthash, method, args, nonce }));
+            BigInteger timestamp = (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Get(digest);
+            BigInteger now = Runtime.Time;
+            ExecutionEngine.Assert(timestamp < now);
+            StorageMap executed = new(Storage.CurrentContext, PREFIX_EXECUTED);
+            ExecutionEngine.Assert((BigInteger)executed.Get(digest) == 0);
+            executed.Put(digest, now);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
-
+        public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
+        {
+        }
         public static void SetTEE(UInt160 newTEE)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_TEE }, newTEE);
         }
-
-        public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
+        public static void PauseDAO()
         {
+            ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 4);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, Runtime.Time + DEFAULT_WAITTIME);
         }
-
         public static void Update(ByteString nefFile, string manifest)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));

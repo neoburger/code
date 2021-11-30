@@ -60,28 +60,23 @@ namespace NeoBurger
             executed.Put(digest, now);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
-        public static void Claim(BigInteger num, UInt256[] proof)
+        public static void Claim(UInt160 claimer, BigInteger num, UInt256[] proof)
         {
             const byte LEAF = 0x00;
             const byte INTERNAL = 0x01;
-            UInt160 caller = Runtime.CallingScriptHash;
-            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, caller, num }));
+            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num }));
             StorageMap minted = new(Storage.CurrentContext, PREFIX_MINTED);
             ExecutionEngine.Assert((BigInteger)minted.Get(digest) == 0);
             foreach (UInt256 sibling in proof)
             {
                 if ((BigInteger)digest < (BigInteger)sibling)
-                {
                     digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, digest, sibling }));
-                }
                 else
-                {
                     digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, sibling, digest }));
-                }
             }
             ExecutionEngine.Assert(digest == Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT }));
             minted.Put(digest, num);
-            Mint(caller, num);
+            Mint(claimer, num);
             ExecutionEngine.Assert(TotalSupply() < BigInteger.Pow(2, 64));
         }
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)

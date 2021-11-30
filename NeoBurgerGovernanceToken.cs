@@ -30,6 +30,7 @@ namespace NeoBurger
         public override string Symbol() => "NOBUG";
         public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
         public static bool NotPaused() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }) < Runtime.Time;
+        public static UInt256 MintRoot() => (UInt256)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT });
 
         public static void _deploy(object data, bool update)
         {

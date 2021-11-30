@@ -51,6 +51,7 @@ namespace NeoBurger
             ExecutionEngine.Assert(NotPaused() || BalanceOf(Runtime.CallingScriptHash) * 2 > TotalSupply());
             ByteString digest = CryptoLib.Sha256(StdLib.Serialize(new object[] { scripthash, method, args, nonce }));
             BigInteger timestamp = (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Get(digest);
+            ExecutionEngine.Assert(timestamp > 0);
             BigInteger now = Runtime.Time;
             ExecutionEngine.Assert(timestamp < now);
             StorageMap executed = new(Storage.CurrentContext, PREFIX_EXECUTED);

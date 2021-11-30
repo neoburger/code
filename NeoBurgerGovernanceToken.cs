@@ -64,9 +64,10 @@ namespace NeoBurger
         {
             const byte LEAF = 0x00;
             const byte INTERNAL = 0x01;
-            UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num }));
+            UInt256 userDigest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num }));
             StorageMap minted = new(Storage.CurrentContext, PREFIX_MINTED);
-            ExecutionEngine.Assert((BigInteger)minted.Get(digest) == 0);
+            ExecutionEngine.Assert((BigInteger)minted.Get(userDigest) == 0);
+            UInt256 digest = userDigest;
             foreach (UInt256 sibling in proof)
             {
                 if ((BigInteger)digest < (BigInteger)sibling)
@@ -75,7 +76,7 @@ namespace NeoBurger
                     digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, sibling, digest }));
             }
             ExecutionEngine.Assert(digest == Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT }));
-            minted.Put(digest, num);
+            minted.Put(userDigest, num);
             Mint(claimer, num);
             ExecutionEngine.Assert(TotalSupply() < BigInteger.Pow(2, 64));
         }

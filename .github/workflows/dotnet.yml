@@ -19,7 +19,7 @@ jobs:
       run: |
         mkdir BurgerNEO
         cd BurgerNEO
-        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
         sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../BurgerNEO.cs > BurgerNEO.cs
         dotnet build
@@ -30,7 +30,7 @@ jobs:
       run: |
         mkdir BurgerAgent0
         cd BurgerAgent0
-        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent0.cs
         dotnet build
@@ -41,7 +41,7 @@ jobs:
       run: |
         mkdir BurgerAgent1
         cd BurgerAgent1
-        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent1.cs
         dotnet build
@@ -52,7 +52,7 @@ jobs:
       run: |
         mkdir BurgerAgent2
         cd BurgerAgent2
-        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent2.cs
         dotnet build
@@ -63,7 +63,7 @@ jobs:
       run: |
         mkdir BurgerAgent3
         cd BurgerAgent3
-        dotnet new -i Neo3.SmartContract.Templates
+        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent3.cs
         dotnet build

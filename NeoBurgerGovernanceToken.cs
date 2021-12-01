@@ -42,14 +42,21 @@ namespace NeoBurger
             ExecutionEngine.Assert(NotPaused());
             new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Put(digest, Runtime.Time + DEFAULT_WAITTIME);
         }
-        public static void SubmitExecution(UInt256 digest)
+        public static void SubmitExecution(UInt160 caller, UInt256 digest)
         {
-            ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) * 2 > TotalSupply());
+            ExecutionEngine.Assert(Runtime.CheckWitness(caller));
+            ExecutionEngine.Assert(BalanceOf(caller) * 2 > TotalSupply());
             new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Put(digest, Runtime.Time + DEFAULT_WAITTIME / 2);
+        }
+        public static void BanExecution(UInt160 caller, UInt256 digest)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(caller));
+            ExecutionEngine.Assert(BalanceOf(caller) * 2 > TotalSupply());
+            new StorageMap(Storage.CurrentContext, PREFIX_EXECUTED).Put(digest, -1);
         }
         public static object Execute(UInt160 scripthash, string method, object[] args, BigInteger nonce)
         {
-            ExecutionEngine.Assert(NotPaused() || BalanceOf(Runtime.CallingScriptHash) * 2 > TotalSupply());
+            ExecutionEngine.Assert(NotPaused());
             ByteString digest = CryptoLib.Sha256(StdLib.Serialize(new object[] { scripthash, method, args, nonce }));
             BigInteger timestamp = (BigInteger)new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Get(digest);
             ExecutionEngine.Assert(timestamp > 0);

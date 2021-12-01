@@ -38,20 +38,17 @@ namespace NeoBurger
         }
         public static void SubmitApprovedExecution(UInt256 digest)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(TEE()));
-            ExecutionEngine.Assert(NotPaused());
+            ExecutionEngine.Assert(Runtime.CheckWitness(TEE()) && NotPaused());
             new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Put(digest, Runtime.Time + DEFAULT_WAITTIME);
         }
         public static void SubmitExecution(UInt160 caller, UInt256 digest)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(caller));
-            ExecutionEngine.Assert(BalanceOf(caller) * 2 > TotalSupply());
+            ExecutionEngine.Assert(Runtime.CheckWitness(caller) && BalanceOf(caller) * 2 > TotalSupply());
             new StorageMap(Storage.CurrentContext, PREFIX_EXECUTION).Put(digest, Runtime.Time + DEFAULT_WAITTIME / 2);
         }
         public static void BanExecution(UInt160 caller, UInt256 digest)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(caller));
-            ExecutionEngine.Assert(BalanceOf(caller) * 2 > TotalSupply());
+            ExecutionEngine.Assert(Runtime.CheckWitness(caller) && BalanceOf(caller) * 2 > TotalSupply());
             new StorageMap(Storage.CurrentContext, PREFIX_EXECUTED).Put(digest, -1);
         }
         public static object Execute(UInt160 scripthash, string method, object[] args, BigInteger nonce)
@@ -100,9 +97,9 @@ namespace NeoBurger
             ExecutionEngine.Assert(Runtime.CheckWitness(Runtime.ExecutingScriptHash));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT }, root);
         }
-        public static void PauseDAO()
+        public static void PauseDAO(UInt160 caller)
         {
-            ExecutionEngine.Assert(BalanceOf(Runtime.CallingScriptHash) > TotalSupply() / 4);
+            ExecutionEngine.Assert(Runtime.CheckWitness(caller) && BalanceOf(caller) > TotalSupply() / 4);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }, Runtime.Time + DEFAULT_WAITTIME);
         }
         public static void Update(ByteString nefFile, string manifest)

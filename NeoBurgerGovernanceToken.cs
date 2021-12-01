@@ -64,11 +64,11 @@ namespace NeoBurger
             executed.Put(digest, now);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
-        public static void Claim(UInt160 claimer, BigInteger num, UInt256[] proof)
+        public static void Claim(UInt160 claimer, BigInteger num, BigInteger nonce, UInt256[] proof)
         {
             const byte LEAF = 0x00;
             const byte INTERNAL = 0x01;
-            UInt256 userDigest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num }));
+            UInt256 userDigest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num, nonce }));
             StorageMap minted = new(Storage.CurrentContext, PREFIX_MINTED);
             ExecutionEngine.Assert((BigInteger)minted.Get(userDigest) == 0);
             UInt256 digest = userDigest;

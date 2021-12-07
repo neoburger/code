@@ -22,6 +22,9 @@ namespace NeoBurger
         private const byte PREFIX_MINTROOT = 0x05;
         private const byte PREFIX_MINTED = 0x06;
 
+        const byte LEAF = 0x00;
+        const byte INTERNAL = 0x01;
+
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_TEE = default;
         private const uint DEFAULT_WAITTIME = 86400000 * 4;
@@ -31,6 +34,10 @@ namespace NeoBurger
         public static UInt160 TEE() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_TEE });
         public static bool NotPaused() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_PAUSEUNTIL }) < Runtime.Time;
         public static UInt256 MintRoot() => (UInt256)Storage.Get(Storage.CurrentContext, new byte[] { PREFIX_MINTROOT });
+
+        public static UInt256 LeafHash(UInt160 account, BigInteger amount, BigInteger nonce) => (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, account, amount, nonce }));
+        public static UInt256 InternalHash(UInt256 child1, UInt256 child2) => (BigInteger)child1 < (BigInteger)child2 ? (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, child1, child2 })) : (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { INTERNAL, child2, child1 }));
+        public static BigInteger Claimed(UInt160 claimer, BigInteger num, BigInteger nonce) => (BigInteger)(new StorageMap(Storage.CurrentContext, PREFIX_MINTED).Get(CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num, nonce }))));
 
         public static void _deploy(object data, bool update)
         {
@@ -64,10 +71,9 @@ namespace NeoBurger
             executed.Put(digest, now);
             return Contract.Call(scripthash, method, CallFlags.All, args);
         }
+
         public static void Claim(UInt160 claimer, BigInteger num, BigInteger nonce, UInt256[] proof)
         {
-            const byte LEAF = 0x00;
-            const byte INTERNAL = 0x01;
             UInt256 userDigest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { LEAF, claimer, num, nonce }));
             StorageMap minted = new(Storage.CurrentContext, PREFIX_MINTED);
             ExecutionEngine.Assert((BigInteger)minted.Get(userDigest) == 0);

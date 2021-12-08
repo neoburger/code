@@ -30,7 +30,7 @@ namespace NeoBurger
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULTOWNER = default;
         private static readonly BigInteger DEFAULTCLAIMREMAIN = 99000000;
-        private static readonly BigInteger DEFAULTWITHDRAWFACTOR = 100;
+        private static readonly BigInteger DEFAULTWITHDRAWFACTOR = 1000;
 
         public static void _deploy(object data, bool update)
         {

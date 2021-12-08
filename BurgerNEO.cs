@@ -27,16 +27,8 @@ namespace NeoBurger
         private const byte PREFIXPAID = 0x06;
         private const byte PREFIXCANDIDATEWHITELIST = 0x07;
 
-        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
-        private static readonly UInt160 DEFAULTOWNER = default;
         private static readonly BigInteger DEFAULTCLAIMREMAIN = 99000000;
-        private static readonly BigInteger DEFAULTWITHDRAWFACTOR = 100;
-
-        public static void _deploy(object data, bool update)
-        {
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, DEFAULTOWNER);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST }, DEFAULTOWNER);
-        }
+        private static readonly BigInteger DEFAULTWITHDRAWFACTOR = 1000;
 
         public override byte Decimals() => 8;
         public override string Symbol() => "bNEO";

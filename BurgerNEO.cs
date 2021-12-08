@@ -32,12 +32,6 @@ namespace NeoBurger
         private static readonly BigInteger DEFAULTCLAIMREMAIN = 99000000;
         private static readonly BigInteger DEFAULTWITHDRAWFACTOR = 1000;
 
-        public static void _deploy(object data, bool update)
-        {
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, DEFAULTOWNER);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST }, DEFAULTOWNER);
-        }
-
         public override byte Decimals() => 8;
         public override string Symbol() => "bNEO";
         public static UInt160 Owner() => (UInt160)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNER });

@@ -26,6 +26,17 @@ jobs:
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
+    - name: Build NeoBurgerGovernanceToken
+      run: |
+        mkdir NeoBurgerGovernanceToken
+        cd NeoBurgerGovernanceToken
+        dotnet new -i Neo3.SmartContract.Templates::1.5.0
+        dotnet new neo3-contract
+        sed "s/\[TODO\]: ARGS/0x82450b644631506b6b7194c4071d0b98d762771f/g" ../NeoBurgerGovernanceToken.cs > NeoBurgerGovernanceToken.cs
+        dotnet build
+        mv bin/sc/* ./
+        rm -rf bin
+        rm -rf obj
     - name: Build BurgerAgent0
       run: |
         mkdir BurgerAgent0

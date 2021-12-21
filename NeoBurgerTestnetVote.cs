@@ -35,7 +35,7 @@ namespace NeoBurger
             StorageMap proposal_executed_time_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL_EXECUTED_TIME });
             BigInteger executed_time = (BigInteger)proposal_executed_time_map.Get((ByteString)id);
             UInt256 digest = (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.nonce }));
-            return new object[] { proposal_attributes.provider, proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.created_time, proposal_attributes.voting_deadline, executed_time, digest };
+            return new object[] { proposal_attributes.provider, proposal_attributes.title, proposal_attributes.description, proposal_attributes.scripthash, proposal_attributes.method, proposal_attributes.args, proposal_attributes.created_time, proposal_attributes.voting_deadline, executed_time, digest };
         }
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
@@ -48,6 +48,8 @@ namespace NeoBurger
         {
             public BigInteger id;
             public UInt160 provider;
+            public string title;
+            public string description;
             public UInt160 scripthash;
             public string method;
             public ByteString[] args;
@@ -64,7 +66,7 @@ namespace NeoBurger
             proposal_id_map.PutObject((ByteString)(BigInteger)0, proposal_attributes);
         }
 
-        public static BigInteger NewProposal(UInt160 provider, BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
+        public static BigInteger NewProposal(UInt160 provider, string title, string description, BigInteger proposal_id, UInt160 scripthash, string method, ByteString[] args)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(provider));
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
@@ -76,6 +78,8 @@ namespace NeoBurger
             ProposalAttributesStruct proposal_attributes = new();
             proposal_attributes.id = proposal_id;
             proposal_attributes.provider = provider;
+            proposal_attributes.title = title;
+            proposal_attributes.description = description;
             proposal_attributes.scripthash = scripthash;
             proposal_attributes.method = method;
             proposal_attributes.args = args;

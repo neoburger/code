@@ -103,7 +103,7 @@ namespace NeoBurger
                 delegate_map.Put(from, to);
         }
 
-        public static void Vote(UInt160 from, BigInteger proposal_index, bool for_or_against)
+        public static void Vote(UInt160 from, BigInteger proposal_index, bool for_or_against, bool unvote=false)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(from));
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
@@ -116,10 +116,15 @@ namespace NeoBurger
             if (executed_time > 0)
                 throw new Exception("Cannot vote for executed proposal");
             StorageMap vote_map = new(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index);
+            if (unvote)
+            {
+                vote_map.Delete(from);
+                return;
+            }
             if (for_or_against)
                 vote_map.Put(from, 1);
             else
-                vote_map.Delete(from);
+                vote_map.Put(from, -1);
         }
 
         public static void MarkProposalExecuted(BigInteger id, BigInteger time)

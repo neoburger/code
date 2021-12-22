@@ -60,6 +60,7 @@ namespace NeoBurger
 
         public static void _deploy(object data, bool update)
         {
+            if (update) return;
             StorageMap proposal_id_map = new(Storage.CurrentContext, new byte[] { PREFIX_PROPOSAL });
             ProposalAttributesStruct proposal_attributes = new();
             proposal_attributes.id = 0;

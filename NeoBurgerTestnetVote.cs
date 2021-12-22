@@ -39,7 +39,7 @@ namespace NeoBurger
         }
 
         public static UInt160 GetDelegate(UInt160 from) => (UInt160)new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Get(from);
-        public static Iterator GetAllDelgates() => new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
+        public static Iterator GetAllDelgates() => new StorageMap(Storage.CurrentContext, PREFIX_DELEGATE).Find(FindOptions.RemovePrefix);
         public static BigInteger GetVote(UInt160 from, BigInteger proposal_index) => (BigInteger)new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_index).Get(from);
         public static Iterator GetVotersOfProposal(BigInteger proposal_id) => new StorageMap(Storage.CurrentContext, (ByteString)new byte[] { PREFIX_VOTE } + (ByteString)proposal_id).Find((FindOptions)((byte)FindOptions.KeysOnly + (byte)FindOptions.RemovePrefix));
         public static UInt256 ProposalDigest(UInt160 scripthash, string method, object[] args, BigInteger nonce) => (UInt256)CryptoLib.Sha256(StdLib.Serialize(new object[] { scripthash, method, args, nonce }));

@@ -10,7 +10,6 @@ using Neo.SmartContract;
 namespace NeoBurger
 {
     [ManifestExtra("Author", "NEOBURGER")]
-    [ManifestExtra("Email", "developer@neo.org")]
     [ManifestExtra("Description", "NeoBurger Governance Token")]
     [SupportedStandards("NEP-17")]
     [ContractPermission("*", "*")]

@@ -26,6 +26,7 @@ namespace NeoBurger
         private const byte PREFIXREWARD = 0x05;
         private const byte PREFIXPAID = 0x06;
         private const byte PREFIXCANDIDATEWHITELIST = 0x07;
+        private const byte PREFIXREWARDENABLED = 0x08;
 
         private static readonly BigInteger DEFAULTCLAIMREMAIN = 99000000;
         private static readonly BigInteger DEFAULTWITHDRAWFACTOR = 1000;
@@ -38,10 +39,11 @@ namespace NeoBurger
         public static ByteString Candidate(ECPoint target) => new StorageMap(Storage.CurrentContext, PREFIXCANDIDATEWHITELIST).Get(target);
         public static BigInteger Reward(UInt160 account) => SyncAccount(account) ? (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account) : 0;
         public static BigInteger RPS() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED });
+        public static bool RewardEnabled() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREWARDENABLED }) > 0;
 
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
-            if (Runtime.CallingScriptHash == GAS.Hash && amount > 0)
+            if (Runtime.CallingScriptHash == GAS.Hash && amount > 0 && RewardEnabled())
             {
                 BigInteger ts = TotalSupply();
                 if (ts > 0)
@@ -142,6 +144,11 @@ namespace NeoBurger
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST }, strategist);
+        }
+        public static void SwitchRewardEnabled()
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREWARDENABLED }, RewardEnabled() ? 0 : 1);
         }
         public static void AllowCandidate(ECPoint target)
         {

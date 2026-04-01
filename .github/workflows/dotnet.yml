@@ -3,6 +3,7 @@ name: .NET
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,19 +11,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
+    - name: Install Neo3 Template
+      run: dotnet new install Neo3.SmartContract.Templates::1.5.0
     - name: Build BurgerNEO
       run: |
         mkdir BurgerNEO
         cd BurgerNEO
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' BurgerNEO.csproj
+        sed -i '/<Target Name="PostBuild"/,/<\/Target>/d' BurgerNEO.csproj
         sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../BurgerNEO.cs > BurgerNEO.cs
         dotnet build
+        NCCS_DLL=$(find ~/.nuget/packages/neo3.compiler.csharp.dev -name "nccs.dll" | head -1)
+        dotnet --roll-forward LatestMajor "$NCCS_DLL" "$(pwd)"
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
@@ -30,10 +36,13 @@ jobs:
       run: |
         mkdir NeoBurgerGovernanceToken
         cd NeoBurgerGovernanceToken
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' NeoBurgerGovernanceToken.csproj
+        sed -i '/<Target Name="PostBuild"/,/<\/Target>/d' NeoBurgerGovernanceToken.csproj
         sed "s/\[TODO\]: ARGS/0x82450b644631506b6b7194c4071d0b98d762771f/g" ../NeoBurgerGovernanceToken.cs > NeoBurgerGovernanceToken.cs
         dotnet build
+        NCCS_DLL=$(find ~/.nuget/packages/neo3.compiler.csharp.dev -name "nccs.dll" | head -1)
+        dotnet --roll-forward LatestMajor "$NCCS_DLL" "$(pwd)"
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
@@ -41,10 +50,13 @@ jobs:
       run: |
         mkdir BurgerAgent0
         cd BurgerAgent0
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' BurgerAgent0.csproj
+        sed -i '/<Target Name="PostBuild"/,/<\/Target>/d' BurgerAgent0.csproj
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent0.cs
         dotnet build
+        NCCS_DLL=$(find ~/.nuget/packages/neo3.compiler.csharp.dev -name "nccs.dll" | head -1)
+        dotnet --roll-forward LatestMajor "$NCCS_DLL" "$(pwd)"
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
@@ -52,10 +64,13 @@ jobs:
       run: |
         mkdir BurgerAgent1
         cd BurgerAgent1
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' BurgerAgent1.csproj
+        sed -i '/<Target Name="PostBuild"/,/<\/Target>/d' BurgerAgent1.csproj
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent1.cs
         dotnet build
+        NCCS_DLL=$(find ~/.nuget/packages/neo3.compiler.csharp.dev -name "nccs.dll" | head -1)
+        dotnet --roll-forward LatestMajor "$NCCS_DLL" "$(pwd)"
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
@@ -63,10 +78,13 @@ jobs:
       run: |
         mkdir BurgerAgent2
         cd BurgerAgent2
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' BurgerAgent2.csproj
+        sed -i '/<Target Name="PostBuild"/,/<\/Target>/d' BurgerAgent2.csproj
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent2.cs
         dotnet build
+        NCCS_DLL=$(find ~/.nuget/packages/neo3.compiler.csharp.dev -name "nccs.dll" | head -1)
+        dotnet --roll-forward LatestMajor "$NCCS_DLL" "$(pwd)"
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
@@ -74,10 +92,13 @@ jobs:
       run: |
         mkdir BurgerAgent3
         cd BurgerAgent3
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' BurgerAgent3.csproj
+        sed -i '/<Target Name="PostBuild"/,/<\/Target>/d' BurgerAgent3.csproj
         sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent3.cs
         dotnet build
+        NCCS_DLL=$(find ~/.nuget/packages/neo3.compiler.csharp.dev -name "nccs.dll" | head -1)
+        dotnet --roll-forward LatestMajor "$NCCS_DLL" "$(pwd)"
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj

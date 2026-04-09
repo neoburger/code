@@ -8,75 +8,23 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      DOTNET_ROLL_FORWARD: LatestMajor
 
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     - name: Build BurgerNEO
       run: |
         mkdir BurgerNEO
         cd BurgerNEO
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
+        sed -i 's/net5.0/net6.0/' BurgerNEO.csproj
         sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../BurgerNEO.cs > BurgerNEO.cs
-        dotnet build
-        mv bin/sc/* ./
-        rm -rf bin
-        rm -rf obj
-    - name: Build NeoBurgerGovernanceToken
-      run: |
-        mkdir NeoBurgerGovernanceToken
-        cd NeoBurgerGovernanceToken
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
-        dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/0x82450b644631506b6b7194c4071d0b98d762771f/g" ../NeoBurgerGovernanceToken.cs > NeoBurgerGovernanceToken.cs
-        dotnet build
-        mv bin/sc/* ./
-        rm -rf bin
-        rm -rf obj
-    - name: Build BurgerAgent0
-      run: |
-        mkdir BurgerAgent0
-        cd BurgerAgent0
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
-        dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent0.cs
-        dotnet build
-        mv bin/sc/* ./
-        rm -rf bin
-        rm -rf obj
-    - name: Build BurgerAgent1
-      run: |
-        mkdir BurgerAgent1
-        cd BurgerAgent1
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
-        dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent1.cs
-        dotnet build
-        mv bin/sc/* ./
-        rm -rf bin
-        rm -rf obj
-    - name: Build BurgerAgent2
-      run: |
-        mkdir BurgerAgent2
-        cd BurgerAgent2
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
-        dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent2.cs
-        dotnet build
-        mv bin/sc/* ./
-        rm -rf bin
-        rm -rf obj
-    - name: Build BurgerAgent3
-      run: |
-        mkdir BurgerAgent3
-        cd BurgerAgent3
-        dotnet new -i Neo3.SmartContract.Templates::1.5.0
-        dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent3.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
